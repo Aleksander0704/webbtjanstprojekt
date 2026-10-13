@@ -1,16 +1,11 @@
 <?php
 
+require_once 'db.php';
+
 // 1. Indata från klienten (t.ex. från request body eller session)
 $userId = 1; // Det user_id som ska verifieras
 
-// 2. Koppla till databasen med MySQLi
-$mysqli = new mysqli("localhost", "anvandare", "losenord", "din_databas");
-
-if ($mysqli->connect_error) {
-    die("❌ Anslutningsfel: " . $mysqli->connect_error);
-}
-
-// 3. Hämta session_key och company_id via Prepared Statement
+// 2. Hämta session_key och company_id via Prepared Statement
 $query = "
     SELECT c.company_id, c.session_key, c.expires_at, c.services 
     FROM USER u
@@ -26,6 +21,7 @@ $companyData = $result->fetch_assoc();
 $stmt->close();
 
 if (!$companyData) {
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['valid' => false, 'message' => 'Användare eller företag hittades inte.']);
     $mysqli->close();
     exit;
@@ -33,7 +29,7 @@ if (!$companyData) {
 
 $sessionKey = $companyData['session_key'];
 
-// 4. Skicka session_key till leverantörens API (/verify)
+// 3. Skicka session_key till leverantörens API (/verify)
 $ch = curl_init('http://host/verify');
 
 curl_setopt_array($ch, [
@@ -56,7 +52,7 @@ curl_close($ch);
 
 $responseData = json_decode($response, true);
 
-// 5. Hantera svaret från leverantören
+// 4. Hantera svaret från leverantören
 if (isset($responseData['valid']) && $responseData['valid'] === true) {
     
     // Valfritt: Uppdatera nytt expires_at i COMPANY-tabellen om API:et returnerade nytt datum
