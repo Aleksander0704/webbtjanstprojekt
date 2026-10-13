@@ -10,7 +10,7 @@ if ($currentUserId <= 0) {
     exit;
 }
 
-// 1. Hämta användarens company_id för behörighetskontroll av utkast
+// 1. Hämta företagets ID
 $stmt = $mysqli->prepare("SELECT company_id FROM USER WHERE user_id = ?");
 $stmt->bind_param("i", $currentUserId);
 $stmt->execute();
@@ -26,11 +26,9 @@ if (!$user) {
 $companyId = $user['company_id'];
 $searchTerm = "%" . mb_strtolower($searchKeyword) . "%";
 
-// 2. Sök-query med UNION ALL
+// 2. Ren och enkel SQL endast för bloggar
 $query = "
-    -- BLOGGPOSTER
     SELECT 
-        'blog' AS type,
         bp.post_id AS id,
         COALESCE(bp.published_title, bp.draft_title) AS title,
         COALESCE(bp.published_content, bp.draft_content) AS content,
@@ -42,40 +40,16 @@ $query = "
     LEFT JOIN TAG t ON bpt.tag_id = t.tag_id
     WHERE (LOWER(bp.published_title) LIKE ? OR LOWER(bp.published_content) LIKE ? OR LOWER(bp.draft_title) LIKE ? OR LOWER(bp.draft_content) LIKE ? OR LOWER(t.name) LIKE ?)
       AND (bp.status = 'published' OR b.company_id = ?)
-
-    UNION
-
-    -- WIKI-ARTIKLAR
-    SELECT 
-        'wiki' AS type,
-        wa.article_id AS id,
-        wh.title AS title,
-        wh.content AS content,
-        wa.status,
-        wa.company_id
-    FROM WIKI_ARTICLE wa
-    JOIN WIKI_HISTORY wh ON wa.current_history_id = wh.history_id
-    LEFT JOIN WIKI_ARTICLE_TAG wat ON wa.article_id = wat.article_id
-    LEFT JOIN TAG t ON wat.tag_id = t.tag_id
-    WHERE (LOWER(wh.title) LIKE ? OR LOWER(wh.content) LIKE ? OR LOWER(t.name) LIKE ?)
-      AND (wa.status = 'published' OR wa.company_id = ?)
 ";
 
 $stmt = $mysqli->prepare($query);
-
-// Bind parametrar (5 för blogg + 1 för company_id, 3 för wiki + 1 för company_id)
-$stmt->bind_param(
-    "sssssisiis", 
-    $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $companyId,
-    $searchTerm, $searchTerm, $searchTerm, $companyId
-);
-
+$stmt->bind_param("sssssi", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $companyId);
 $stmt->execute();
 $result = $stmt->get_result();
-$searchResults = [];
 
+$posts = [];
 while ($row = $result->fetch_assoc()) {
-    $searchResults[] = $row;
+    $posts[] = $row;
 }
 
 $stmt->close();
@@ -84,7 +58,6 @@ $mysqli->close();
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'success' => true,
-    'query' => $searchKeyword,
-    'count' => count($searchResults),
-    'results' => $searchResults
+    'count' => count($posts),
+    'results' => $posts
 ], JSON_PRETTY_PRINT);
