@@ -1,1 +1,4 @@
 /.ddev
+.env
+uploads/*
+!uploads/.gitkeep
