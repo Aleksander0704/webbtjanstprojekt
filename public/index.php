@@ -1,38 +1,34 @@
 <?php
 
-/*
- * Startpunkten för hela webbtjänsten. ALLA anrop kommer hit.
- * Läser URL:en, t.ex. /acme/blog/posts, och skickar vidare till rätt fil i src/.
- * Ska innehålla så lite kod som möjligt.
- */
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
 
-require_once __DIR__ . '/../src/core.php';
+// Läs in databasanslutningen
+$db = require_once __DIR__ . '/../src/core.php';
 
-// /1/wiki/pages -> ['1', 'wiki', 'pages']
+// Parsa URL
 $path  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $delar = explode('/', trim($path, '/'));
 
-$foretag = $delar[0] ?? '';   // "1" (används när core.php kan välja företagsdatabas)
-$tjanst  = $delar[1] ?? '';   // "wiki"
+$tjanst = $_GET['resource'] ?? $delar[1] ?? $delar[0] ?? '';
+$action = $_GET['action']   ?? $delar[2] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
 
 switch ($tjanst) {
-    case 'auth':
-        require __DIR__ . '/../src/auth.php';
-        break;
-    case 'blog':
-        require __DIR__ . '/../src/blog.php';
-        break;
-    case 'calendar':
-        require __DIR__ . '/../src/calendar.php';
-        break;
-    case 'images':
-        require __DIR__ . '/../src/images.php';
-        break;
     case 'wiki':
-        require __DIR__ . '/../src/wiki.php';
+        require_once __DIR__ . '/../src/wikiController.php';
+        $controller = new WikiController($db);
+
+        if ($method === 'POST' && $action === 'create') {
+            $controller->create();
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ogiltig action eller HTTP-metod för wiki']);
+        }
         break;
+
     default:
         http_response_code(404);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Finns inte']);
+        echo json_encode(['error' => 'Tjänsten hittades inte']);
+        break;
 }

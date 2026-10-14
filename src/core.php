@@ -10,10 +10,16 @@
 
 $env = parse_ini_file(__DIR__ . '/../.env');
 
+// Hämta databasnamn från URL (?db=company_1) eller fallback till 'company_1'
+$dbName = $_GET['db'] ?? $_POST['db_name'] ?? 'company_1';
+
 try {
-    $db = new mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASS'], 'company_1');
+    $db = new mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASS'], $dbName);
     $db->set_charset('utf8mb4');
+    return $db;
 } catch (mysqli_sql_exception $e) {
     http_response_code(500);
-    exit('Kunde inte ansluta till databasen');
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => "Kunde inte ansluta till databasen '{$dbName}': " . $e->getMessage()]);
+    exit;
 }

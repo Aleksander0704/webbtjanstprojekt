@@ -1,14 +1,6 @@
 <?php
 
-/*
- * Wikitjänsten (services & 4).
- * Skapa, uppdatera, ta bort och läsa sidor, sök, bilder och historik.
- * Varje ändring sparas som en ny version i WIKI_HISTORY.
- */
-
-require_once __DIR__ . '/core.php';
-
-class WikiService {
+class WikiModel {
     private $db;
 
     public function __construct($db) {
@@ -16,88 +8,38 @@ class WikiService {
     }
 
     /**
-     * Hanterar inkommande request för att skapa en wiki-artikel.
+     * Skapar en artikel, dess första historikversion och kopplar taggar i en transaktion.
      */
-    public function createWikiArticle() {
-        $input = $this->getRequestData();
-
-        $ownerUserId = $input['owner_user_id'] ?? $input['user_id'] ?? null;
-        $title       = $input['title'] ?? null;
-        $content     = $input['content'] ?? null;
-        $status      = $input['status'] ?? 'draft';
-        $tagsInput   = $input['tags'] ?? $input['tag'] ?? null;
-
-        // Validering
-        if (!$ownerUserId || !$title || !$content) {
-            $this->sendJsonResponse([
-                "message" => "Fälten 'owner_user_id', 'title' och 'content' krävs."
-            ], 400);
-            return;
-        }
-
-        // Hantera taggar
-        $tags = [];
-        if (!empty($tagsInput)) {
-            $tags = is_array($tagsInput) 
-                ? array_filter(array_map('trim', $tagsInput))
-                : array_filter(array_map('trim', explode(',', $tagsInput)));
-        }
-
-        // Skapa artikeln i databasen
-        $result = $this->createArticleInDb($ownerUserId, $title, $content, $status, $tags);
-
-        if (is_array($result) && isset($result['error'])) {
-            $this->sendJsonResponse(["message" => "Databasfel: " . $result['error']], 500);
-        } elseif ($result) {
-            $this->sendJsonResponse([
-                "message" => "Wiki-artikeln skapades framgångsrikt!",
-                "article_id" => $result
-            ], 201);
-        } else {
-            $this->sendJsonResponse(["message" => "Kunde inte skapa wiki-artikeln."], 500);
-        }
-    }
-
-    /**
-     * Databasinteraktion med transaktioner för WIKI_ARTICLE, WIKI_HISTORY och TAG.
-     */
-    private function createArticleInDb($ownerUserId, $title, $content, $status, array $tags) {
+    public function createArticle($ownerUserId, $title, $content, $status, array $tags) {
         $this->db->begin_transaction();
 
         try {
-            // 1. Skapa post i WIKI_ARTICLE (isolerad databas, ingen company_id)
+            // 1. Skapa WIKI_ARTICLE
             $queryArticle = "INSERT INTO WIKI_ARTICLE (owner_user_id, status, created_at) VALUES (?, ?, NOW())";
-            $stmtArticle = $this->db->prepare($queryArticle);
-            $stmtArticle->bind_param("is", $ownerUserId, $status);
-
-            if (!$stmtArticle->execute()) {
-                throw new Exception("Kunde inte skapa WIKI_ARTICLE: " . $stmtArticle->error);
-            }
-
+            $stmt = $this->db->prepare($queryArticle);
+            $stmt->bind_param("is", $ownerUserId, $status);
+            $stmt->execute();
             $articleId = $this->db->insert_id;
-            $stmtArticle->close();
+            $stmt->close();
 
-            // 2. Skapa första versionen i WIKI_HISTORY (version_number = 1)
-            $queryHistory = "INSERT INTO WIKI_HISTORY (article_id, version_number, title, content, edited_at, edited_by_user_id) VALUES (?, 1, ?, ?, NOW(), ?)";
-            $stmtHistory = $this->db->prepare($queryHistory);
-            $stmtHistory->bind_param("issi", $articleId, $title, $content, $ownerUserId);
-
-            if (!$stmtHistory->execute()) {
-                throw new Exception("Kunde inte skapa WIKI_HISTORY: " . $stmtHistory->error);
-            }
-
+            // 2. Skapa WIKI_HISTORY (v1)
+            $queryHistory = "INSERT INTO WIKI_HISTORY (article_id, version_number, title, content, edited_at, edited_by_user_id) 
+                            VALUES (?, 1, ?, ?, NOW(), ?)";
+            $stmt = $this->db->prepare($queryHistory);
+            $stmt->bind_param("issi", $articleId, $title, $content, $ownerUserId);
+            $stmt->execute();
             $historyId = $this->db->insert_id;
-            $stmtHistory->close();
+            $stmt->close();
 
-            // 3. Koppla nuvarande historik-ID till artikeln
+            // 3. Uppdatera pekare för historik
             $publishedHistoryId = ($status === 'published') ? $historyId : null;
             $queryUpdate = "UPDATE WIKI_ARTICLE SET current_history_id = ?, published_history_id = ? WHERE article_id = ?";
-            $stmtUpdate = $this->db->prepare($queryUpdate);
-            $stmtUpdate->bind_param("iii", $historyId, $publishedHistoryId, $articleId);
-            $stmtUpdate->execute();
-            $stmtUpdate->close();
+            $stmt = $this->db->prepare($queryUpdate);
+            $stmt->bind_param("iii", $historyId, $publishedHistoryId, $articleId);
+            $stmt->execute();
+            $stmt->close();
 
-            // 4. Lägg till taggar om de finns
+            // 4. Koppla taggar
             if (!empty($tags)) {
                 $this->addTagsToArticle($articleId, $tags);
             }
@@ -107,7 +49,7 @@ class WikiService {
 
         } catch (Throwable $e) {
             $this->db->rollback();
-            return ["error" => $e->getMessage()];
+            throw $e;
         }
     }
 
@@ -147,23 +89,5 @@ class WikiService {
         $stmt->close();
 
         return $tagId;
-    }
-
-    private function getRequestData(): array {
-        $rawJson = file_get_contents('php://input');
-        $decodedJson = json_decode($rawJson, true);
-
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedJson)) {
-            return $decodedJson;
-        }
-
-        return $_POST;
-    }
-
-    private function sendJsonResponse($data, int $statusCode = 200): void {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-        exit;
     }
 }
