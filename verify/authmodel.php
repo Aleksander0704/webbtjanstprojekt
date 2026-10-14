@@ -7,18 +7,17 @@ class AuthModel {
     }
 
     /**
-     * Hämtar session och tjänster baserat på användarens session_key
+     * Hämtar session och tjänster. 
+     * Eftersom det bara finns ett företag hämtar vi tjänsterna därifrån direkt.
      */
     public function getSessionWithServices(string $sessionKey) {
-        // Om company_id t.ex. ligger direkt på sessionen eller om vi hämtar tjänsterna via en koppling
         $query = "
             SELECT 
                 us.session_id,
                 us.user_id,
                 us.expires_at,
-                c.services 
+                (SELECT services FROM COMPANY LIMIT 1) AS services
             FROM USER_SESSION us
-            JOIN COMPANY c ON us.company_id = c.company_id
             WHERE us.session_key = ?
         ";
 
