@@ -1,9 +1,9 @@
 <?php
-// login.php - Entry point för inloggning
+// login.php
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/loginmodel.php';
+require_once __DIR__ . '/logincontroller.php';
 
-require_once __DIR__ . '/db.php';              // Din databasanslutning ($mysqli)
-require_once __DIR__ . '/LoginController.php';
-
-// Starta kontrollern och hantera inloggningsförfrågan
-$controller = new LoginController($mysqli);
+$model = new LoginModel($mysqli);
+$controller = new LoginController($model);
 $controller->handleRequest();

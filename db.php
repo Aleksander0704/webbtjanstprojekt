@@ -1,25 +1,45 @@
 <?php
+// config.php - Läser in .env och skapar databasanslutning
 
-/*
- * Grunden som alla andra filer använder.
- * - Läser in .env (DB-uppgifter, API-adress, krypteringsnyckel).
- * - Ansluter till databaserna: den gemensamma (central) och rätt företagsdatabas,
- *   t.ex. "acme" i URL:en -> databasen company_acme.
- * - Hjälpfunktioner för JSON-svar, t.ex. json_ok($data) och json_error(403, "Ingen åtkomst").
- */
+// 1. Läs in .env-filen om den finns
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Hoppa över kommentarsrader
+        if (str_starts_with(trim($line), '#')) {
+            continue;
+        }
 
-$env = parse_ini_file(__DIR__ . '/../.env');
+        // Dela upp raden på ett likhetstecken (=)
+        if (str_contains($line, '=')) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            // Ta bort eventuella citattecken runt värdet
+            $value = trim($value, '"\'');
+            
+            // Spara i $_ENV och $_SERVER för säkerhets skull
+            $_ENV[$name] = $value;
+            putenv("$name=$value");
+        }
+    }
+}
 
-// Hämta databasnamn från URL (?db=company_1) eller fallback till 'company_1'
-$dbName = $_GET['db'] ?? $_POST['db_name'] ?? 'company_1';
+// 2. Hämta databas-uppgifterna från $_ENV
+$dbHost = $_ENV['DB_HOST'];
+$dbUser = $_ENV['DB_USER'];
+$dbPass = $_ENV['DB_PASS'];
+$dbName = $_ENV['DB_NAME'];
+$dbPort = $_ENV['DB_PORT'] ?? 3306;
 
-try {
-    $db = new mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASS'], $dbName);
-    $db->set_charset('utf8mb4');
-    return $db;
-} catch (mysqli_sql_exception $e) {
+// 3. Skapa MySQLi-anslutningen
+$mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName, intval($dbPort));
+
+if ($mysqli->connect_error) {
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['error' => "Kunde inte ansluta till databasen '{$dbName}': " . $e->getMessage()]);
+    echo json_encode(["error" => "Databasanslutning misslyckades: " . $mysqli->connect_error]);
     exit;
 }
+
+$mysqli->set_charset("utf8mb4");
