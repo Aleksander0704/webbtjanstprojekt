@@ -7,3 +7,5 @@
  *   Nyckeln sparas aldrig i klartext i databasen (tabellen COMPANY).
  * - Kollar att företaget har betalat för rätt tjänst (services: 1 = kalender, 2 = blogg, 4 = wiki).
  */
+
+require_once __DIR__ . '/core.php';

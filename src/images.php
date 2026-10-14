@@ -6,3 +6,5 @@
  * - Visa: kolla att användaren får se bilden innan den skickas.
  * - Ta bort: radera både filen och raden i IMAGE.
  */
+
+require_once __DIR__ . '/core.php';

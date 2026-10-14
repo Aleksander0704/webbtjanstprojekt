@@ -8,3 +8,5 @@
  * - Admin: lägga till, lista och inaktivera anställda.
  * - Alla: se företagets medlemmar (behövs t.ex. för inbjudningar i kalendern).
  */
+
+require_once __DIR__ . '/core.php';
