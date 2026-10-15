@@ -1,6 +1,6 @@
 <?php
 //kopplingar
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/blogg/blogg.php';
 require_once __DIR__ . '/calendar/calendar.php';
 require_once __DIR__ . '/wiki/wiki.php';
