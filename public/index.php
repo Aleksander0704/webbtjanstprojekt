@@ -33,6 +33,19 @@ switch ($tjanst) {
         }
         break;
 
+    case 'calendar':
+        require_once __DIR__ . '/../src/calendar.php';
+        $in = hamta_indata();
+        $userId = inloggad_user($mysqli, $in);
+        kraver_kalender($mysqli);
+
+        if ($method === 'GET'  && $action === 'list')    kalender_lista($mysqli, $userId);
+        if ($method === 'POST' && $action === 'create')  kalender_skapa($mysqli, $userId, $in);
+        if ($method === 'POST' && $action === 'update')  kalender_andra($mysqli, $userId, $in);
+        if ($method === 'POST' && $action === 'respond') kalender_svara($mysqli, $userId, $in);
+        svara(['error' => 'Ogiltig action eller HTTP-metod för kalendern'], 400);
+        break;
+
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Tjänsten hittades inte']);
