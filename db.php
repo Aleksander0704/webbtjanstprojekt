@@ -8,18 +8,22 @@
  * - Hjälpfunktioner för JSON-svar, t.ex. json_ok($data) och json_error(403, "Ingen åtkomst").
  */
 
-$env = parse_ini_file(__DIR__ . '/../.env');
+// Läs in inställningar från .env-filen i projektets rot
+$env = parse_ini_file(__DIR__ . '/.env');
 
-// Hämta databasnamn från URL (?db=company_1) eller fallback till 'company_1'
-$dbName = $_GET['db'] ?? $_POST['db_name'] ?? 'company_1';
+$host = $env['DB_HOST'] ?? 'db';
+$user = $env['DB_USER'] ?? 'db';
+$pass = $env['DB_PASS'] ?? 'db';
+$name = $env['DB_NAME'] ?? 'company_1';
 
-try {
-    $db = new mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASS'], $dbName);
-    $db->set_charset('utf8mb4');
-    return $db;
-} catch (mysqli_sql_exception $e) {
+$db = new mysqli($host, $user, $pass, $name);
+
+if ($db->connect_error) {
     http_response_code(500);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['error' => "Kunde inte ansluta till databasen '{$dbName}': " . $e->getMessage()]);
+    echo json_encode(["error" => "Databasanslutningen misslyckades: " . $db->connect_error]);
     exit;
 }
+
+$db->set_charset("utf8mb4");
+
+return $db;
