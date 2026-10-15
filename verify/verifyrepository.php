@@ -1,20 +1,12 @@
 <?php
-// AuthModel.php
-
-class AuthModel {
+class VerifyRepository {
     private $db;
 
     public function __construct($db) {
         $this->db = $db;
     }
 
-    /**
-     * Hämtar session via token_hash och tillhörande tjänster från COMPANY.
-     */
-    public function getSessionWithServices(string $rawToken) {
-        // Hasha den inkommande token med sha256 för att matcha lagringen i USER_TOKEN
-        $tokenHash = hash('sha256', $rawToken);
-
+    public function getSessionWithServices(string $tokenHash): ?array {
         $query = "
             SELECT 
                 ut.token_id AS session_id,
@@ -32,22 +24,14 @@ class AuthModel {
         $sessionData = $result->fetch_assoc();
         $stmt->close();
 
-        return $sessionData;
+        return $sessionData ?: null;
     }
 
-    /**
-     * Förlänger giltighetstiden för token i USER_TOKEN.
-     */
-    public function extendSession(string $rawToken): string {
-        $tokenHash = hash('sha256', $rawToken);
-        $newExpiresAt = date('Y-m-d H:i:s', strtotime('+30 minutes'));
-
+    public function extendSession(string $tokenHash, string $newExpiresAt): void {
         $query = "UPDATE USER_TOKEN SET expires_at = ?, last_used_at = NOW() WHERE token_hash = ?";
         $stmt = $this->db->prepare($query);
         $stmt->bind_param("ss", $newExpiresAt, $tokenHash);
         $stmt->execute();
         $stmt->close();
-
-        return $newExpiresAt;
     }
 }

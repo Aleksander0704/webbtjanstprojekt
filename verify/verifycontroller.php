@@ -1,11 +1,9 @@
 <?php
-require_once __DIR__ . '/authmodel.php';
-
 class VerifyController {
-    private $authModel;
+    private $verifyService;
 
-    public function __construct($db) {
-        $this->authModel = new AuthModel($db);
+    public function __construct(VerifyService $verifyService) {
+        $this->verifyService = $verifyService;
     }
 
     public function handleRequest() {
@@ -13,7 +11,6 @@ class VerifyController {
             $this->sendJsonResponse(['valid' => false], 405);
         }
 
-        // Hämta session_key från antingen $_POST (Multipart/form-data) eller php://input (JSON)
         $sessionKey = $_POST['session_key'] ?? null;
         if (!$sessionKey) {
             $input = json_decode(file_get_contents('php://input'), true);
@@ -24,20 +21,17 @@ class VerifyController {
             $this->sendJsonResponse(['valid' => false], 400);
         }
 
-        $session = $this->authModel->getSessionWithServices($sessionKey);
+        $result = $this->verifyService->verifyAndExtend($sessionKey);
 
-        if (!$session || strtotime($session['expires_at']) < time()) {
+        if (!$result) {
             $this->sendJsonResponse(['valid' => false], 200);
         }
 
-        // Förläng sessionen med 30 minuter (Auto-renew)
-        $newExpiresAt = $this->authModel->extendSession($sessionKey);
-
         $this->sendJsonResponse([
             'valid' => true,
-            'user_id' => intval($session['user_id']),
-            'services' => intval($session['services']),
-            'new_expires_at' => $newExpiresAt
+            'user_id' => $result['user_id'],
+            'services' => $result['services'],
+            'new_expires_at' => $result['new_expires_at']
         ], 200);
     }
 

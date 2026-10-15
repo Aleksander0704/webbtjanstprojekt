@@ -1,17 +1,14 @@
 <?php
-// LoginController.php
-
 class LoginController {
-    private $model;
+    private $loginService;
 
-    public function __construct($model) {
-        $this->model = $model;
+    public function __construct(LoginService $loginService) {
+        $this->loginService = $loginService;
     }
 
     public function handleRequest() {
         header('Content-Type: application/json; charset=utf-8');
 
-        // Hämta data från form-data ($_POST)
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
 
@@ -21,8 +18,7 @@ class LoginController {
             return;
         }
 
-        // Försök logga in via modellen
-        $sessionData = $this->model->authenticate($username, $password);
+        $sessionData = $this->loginService->authenticate($username, $password);
 
         if (!$sessionData) {
             http_response_code(401);
@@ -30,7 +26,6 @@ class LoginController {
             return;
         }
 
-        // Skicka tillbaka lyckat svar med session_key
         http_response_code(200);
         echo json_encode(array_merge(["success" => true], $sessionData));
     }
