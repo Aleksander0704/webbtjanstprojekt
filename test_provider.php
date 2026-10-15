@@ -3,30 +3,25 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/verify/providerclient.php';
 
-// Sätt header så det blir ren JSON
 header('Content-Type: application/json; charset=utf-8');
 
 $client = new ProviderClient($mysqli);
 $companyId = 1;
 
-// 1. Testa att logga in och hämta ny nyckel
-$loginResult = $client->loginCompany($companyId);
+// Hämta en garanterat giltig session (förnyar eller verifierar automatiskt)
+$sessionKey = $client->getValidSessionKey($companyId);
 
-if (!$loginResult) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Inloggning misslyckades för företag {$companyId}. Kolla .env och leverantörens URL."
-    ], JSON_PRETTY_PRINT);
-    exit;
-}
+// Hämta aktuell status direkt från databasen för att verifiera
+$stmt = $mysqli->prepare("SELECT company_id, session_key, expires_at, services FROM COMPANY WHERE company_id = ?");
+$stmt->bind_param("i", $companyId);
+$stmt->execute();
+$companyData = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-// 2. Testa att verifiera nyckeln
-$isValid = $client->verifyCompanySession($companyId);
-
-// Skriv ut ett snyggt resultat
 echo json_encode([
-    "status" => "success",
-    "message" => "Testet genomfört!",
-    "login_data" => $loginResult,
-    "verification_passed" => $isValid
+    "success" => $sessionKey !== null,
+    "company_id" => $companyData['company_id'] ?? $companyId,
+    "session_key" => $companyData['session_key'] ?? null,
+    "services" => $companyData['services'] ?? 0,
+    "expires_at" => $companyData['expires_at'] ?? null
 ], JSON_PRETTY_PRINT);
