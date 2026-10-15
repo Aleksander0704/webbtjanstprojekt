@@ -1,4 +1,6 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/verifyrepository.php';
 require_once __DIR__ . '/verifyservice.php';
