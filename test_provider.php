@@ -6,7 +6,7 @@ require_once __DIR__ . '/verify/providerclient.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $client = new ProviderClient($mysqli);
-$companyId = 1;
+$companyId = 4;
 
 // Hämta en garanterat giltig session (förnyar eller verifierar automatiskt)
 $sessionKey = $client->getValidSessionKey($companyId);

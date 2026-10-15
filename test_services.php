@@ -9,7 +9,7 @@ define('SERVICE_CALENDAR', 1);
 define('SERVICE_BLOG', 2);
 define('SERVICE_WIKI', 4);
 
-$companyId = 1;
+$companyId = 4;
 
 // Hämta session (och se till att den är giltig/uppdaterad)
 $sessionKey = getCompanySessionKey($companyId);
