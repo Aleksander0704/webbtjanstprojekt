@@ -1,12 +1,12 @@
 <?php
 // test_provider.php
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/verify/providerclient.php';
+require_once __DIR__ . '/company/providerservice.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 $client = new ProviderClient($mysqli);
-$companyId = 4;
+$companyId = 1;
 
 // Hämta en garanterat giltig session (förnyar eller verifierar automatiskt)
 $sessionKey = $client->getValidSessionKey($companyId);

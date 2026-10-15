@@ -35,11 +35,19 @@ class CalendarService {
         // 3. Affärsregel: Kontrollera att start_time är före end_time
         $startTime = strtotime($requestData['start_time']);
         $endTime = strtotime($requestData['end_time']);
+        $currentTime = time();
 
         if ($startTime === false || $endTime === false || $startTime >= $endTime) {
             return [
                 'success' => false,
                 'error' => 'Sluttiden måste vara efter starttiden.',
+                'status' => 422
+            ];
+        }
+        if ($startTime < $currentTime){
+             return [
+                'success' => false,
+                'error' => 'Går inte göra ett event i det förflutna',
                 'status' => 422
             ];
         }
@@ -72,6 +80,26 @@ class CalendarService {
             'success' => true,
             'event_id' => $eventId,
             'status' => 201
+        ];
+    }
+    /**
+     * Hämtar event för en användare via servicen.
+     */
+    public function getUserEvents(int $userId): array {
+        if ($userId <= 0) {
+            return [
+                'success' => false,
+                'error' => 'Ogiltigt användar-ID.',
+                'status' => 400
+            ];
+        }
+
+        $events = $this->repository->getEventsForUser($userId);
+
+        return [
+            'success' => true,
+            'events' => $events,
+            'status' => 200
         ];
     }
 }

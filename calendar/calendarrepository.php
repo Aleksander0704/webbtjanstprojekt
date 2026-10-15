@@ -87,4 +87,30 @@ class CalendarRepository {
             return null;
         }
     }
+
+    /**
+     * Hämtar alla kalenderevent som en viss användare är kopplad till.
+     */
+    public function getEventsForUser(int $userId): array {
+        $query = "SELECT e.event_id, e.title, e.description, e.start_time, e.end_time, e.location, e.is_company_wide, 
+                         p.status AS participant_status, p.role AS participant_role
+                  FROM CALENDAR_EVENT e
+                  JOIN EVENT_PARTICIPANT p ON e.event_id = p.event_id
+                  WHERE p.user_id = ?
+                  ORDER BY e.start_time ASC";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
+        $events = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $events[] = $row;
+        }
+
+        $stmt->close();
+        return $events;
+    }
 }

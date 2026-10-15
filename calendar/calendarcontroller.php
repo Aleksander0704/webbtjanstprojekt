@@ -14,6 +14,8 @@ class CalendarController {
 
         if ($method === 'POST') {
             $this->createEvent();
+        } elseif ($method === 'GET') {
+            $this->getEvents();
         } else {
             http_response_code(405);
             echo json_encode([
@@ -23,6 +25,19 @@ class CalendarController {
         }
     }
 
+    private function getEvents(): void {
+        // Hämta user_id från query-parametrar (t.ex. calendar.php?user_id=1)
+        $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 1;
+
+        $result = $this->service->getUserEvents($userId);
+
+        http_response_code($result['status']);
+        echo json_encode([
+            'success' => $result['success'],
+            'events' => $result['events'] ?? [],
+            'error' => $result['error'] ?? null
+        ]);
+    }
     private function createEvent(): void {
         // 1. Använd $_POST istället för file_get_contents för form-data / multipart
         // Om data skickas som x-www-form-urlencoded eller multipart/form-data hamnar det här.
