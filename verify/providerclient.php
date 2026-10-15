@@ -3,8 +3,8 @@
 
 class ProviderClient {
     private $db;
-    private $providerLoginUrl = "http://theprovider.ntigskovde.se/login"; 
-    private $providerVerifyUrl = "http://theprovider.ntigskovde.se/verify"; 
+    private $providerLoginUrl = "https://theprovider.ntigskovde.se/login"; 
+    private $providerVerifyUrl = "https://theprovider.ntigskovde.se/verify"; 
 
     public function __construct($db) {
         $this->db = $db;
@@ -37,7 +37,7 @@ class ProviderClient {
         // Om leverantören svarar att nyckeln är giltig
         if ($response && isset($response['valid']) && $response['valid'] === true) {
             // Uppdatera lokal expires_at och services med det nya datumet från leverantören
-            $newExpiresAt = $response['new_expires_at'] ?? $company['expires_at'];
+            $newExpiresAt = date('Y-m-d H:i:s', strtotime('+30 minutes'));
             $services = $response['services'] ?? 1;
 
             $updateStmt = $this->db->prepare("UPDATE COMPANY SET expires_at = ?, services = ? WHERE company_id = ?");
@@ -74,7 +74,7 @@ class ProviderClient {
         }
 
         $sessionKey = $response['session_key'];
-        $expiresAt = $response['expires_at'] ?? date('Y-m-d H:i:s', strtotime('+30 minutes'));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+30 minutes'));
         $services = $response['services'] ?? 0;
 
         // Använd INSERT ... ON DUPLICATE KEY UPDATE så den skapar raden om den saknas
