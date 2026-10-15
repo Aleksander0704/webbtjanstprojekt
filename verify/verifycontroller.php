@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/AuthModel.php';
+require_once __DIR__ . '/authmodel.php';
 
 class VerifyController {
     private $authModel;
@@ -13,8 +13,12 @@ class VerifyController {
             $this->sendJsonResponse(['valid' => false], 405);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $sessionKey = $input['session_key'] ?? null;
+        // Hämta session_key från antingen $_POST (Multipart/form-data) eller php://input (JSON)
+        $sessionKey = $_POST['session_key'] ?? null;
+        if (!$sessionKey) {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $sessionKey = $input['session_key'] ?? null;
+        }
 
         if (!$sessionKey) {
             $this->sendJsonResponse(['valid' => false], 400);
@@ -26,7 +30,7 @@ class VerifyController {
             $this->sendJsonResponse(['valid' => false], 200);
         }
 
-        // Förläng sessionen med 30 minuter (Auto-renew enligt spec)
+        // Förläng sessionen med 30 minuter (Auto-renew)
         $newExpiresAt = $this->authModel->extendSession($sessionKey);
 
         $this->sendJsonResponse([
