@@ -23,10 +23,10 @@ function createToken($username, $password) {
     $tokenHash  = hash('sha256', $token);             // hash att spara (CHAR(64))
     $expires_at = date('Y-m-d H:i:s', strtotime('+30 minutes'));
 
-    // Rensa gamla tokens som har gått ut
+    // En token per user: ta bort userns gamla token innan den nya sparas
     $mysqli->execute_query(
-        "DELETE FROM USER_TOKEN WHERE expires_at < ?",
-        [date('Y-m-d H:i:s')]
+        "DELETE FROM USER_TOKEN WHERE user_id = ?",
+        [$userId]
     );
 
     $mysqli->execute_query(
