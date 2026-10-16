@@ -126,4 +126,18 @@ function logout() {
     sendJson(['success' => true]);
     exit;
 }
+function checkService($service) {
+    global $mysqli, $id;
+
+    $row = $mysqli->execute_query(
+        "SELECT services FROM COMPANY WHERE company_id = ?",
+        [$id]
+    )->fetch_assoc();
+
+    if (!$row || !($row['services'] & $service)) {
+        sendJson(['error' => 'Företaget har inte tillgång till den här tjänsten'], 403);
+        exit;
+    }
+}
+
 ?>

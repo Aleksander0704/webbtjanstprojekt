@@ -22,13 +22,16 @@ $token = $_POST['token'] ?? '';
 
 switch($option){
     //test
-    case 'blogg':
-        blogg();
-        break;
     case 'calendar':
+        checkService(1);
         calendar();
         break;
+    case 'blogg':
+        checkService(2);
+        blogg();
+        break;
     case 'wiki':
+        checkService(4);
         wiki();
         break;
     //theprovidor
