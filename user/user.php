@@ -37,6 +37,13 @@ function deluser(string $username) {
         exit;
     }
 
+    $offer = $mysqli->execute_query("SELECT user_id FROM USER WHERE username = ?", [$username])->fetch_assoc();
+    $admin = inloggadUser($token);
+    if ($offer && $offer['user_id'] === $admin['user_id']) {
+        sendJson(['error' => 'Du kan inte ta bort dig själv'], 400);
+    exit;
+}
+
     $stmt = $mysqli->prepare("DELETE FROM USER WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
