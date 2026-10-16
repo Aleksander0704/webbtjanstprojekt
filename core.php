@@ -9,8 +9,6 @@ function sendJson($data, int $statusCode = 200)
     echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 }
 
-// 2. Hämta databas-uppgifterna från $_ENV
-
 // 3. Skapa MySQLi-anslutningen
 $mysqli = new mysqli("db","db","db","db");
 
