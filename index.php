@@ -58,13 +58,16 @@ switch($option){
     case 'createtoken':
         createToken($username, $password);
         break;
+        
     /*
     case 'listtokens':
         listtoken();
         break;
     */
+
     case 'verifytoken':
-        verifyToken($token);
+        $user = inloggadUser($token);
+        sendJson(['success' => true, 'user_id' => $user['user_id'], 'role' => $user['role']]);
         break;
     case 'userlogout':
         userlogout($token);

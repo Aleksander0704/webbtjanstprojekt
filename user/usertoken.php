@@ -52,35 +52,24 @@ function listtoken() {
 
 function verifyToken($token) {
     global $mysqli;
-
     $tokenHash = hash('sha256', $token);
 
-    $stmt = $mysqli->prepare("SELECT user_id, expires_at FROM USER_TOKEN WHERE token_hash = ?");
-    $stmt->bind_param("s", $tokenHash);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
+    $row = $mysqli->execute_query(
+        "SELECT u.user_id, u.role FROM USER_TOKEN t JOIN USER u ON u.user_id = t.user_id
+        WHERE t.token_hash = ? AND t.expires_at > ?",
+        [$tokenHash, date('Y-m-d H:i:s')]
+    )->fetch_assoc();
 
     if (!$row) {
-        sendJson(['error' => 'Ogiltig token'], 401);
-        exit;
+        return null;   // ingen sendJson, ingen exit
     }
-
-    if (new DateTime() > new DateTime($row['expires_at'])) {
-        sendJson(['error' => 'Token har gått ut'], 401);
-        exit;
-    }
-
-    // Förläng 30 min och spara när token användes senast
-    $nu         = date('Y-m-d H:i:s');
-    $expires_at = date('Y-m-d H:i:s', strtotime('+30 minutes'));
 
     $mysqli->execute_query(
         "UPDATE USER_TOKEN SET expires_at = ?, last_used_at = ? WHERE token_hash = ?",
-        [$expires_at, $nu, $tokenHash]
+        [date('Y-m-d H:i:s', strtotime('+30 minutes')), date('Y-m-d H:i:s'), $tokenHash]
     );
 
-    sendJson(['success' => true, 'user_id' => $row['user_id'], 'expires_at' => $expires_at]);
-    exit;
+    return $row;
 }
 
 function userlogout($token) {
@@ -102,18 +91,12 @@ function userlogout($token) {
 }
 
 function inloggadUser($token) {
-    global $mysqli;
+    $user = verifyToken($token);
 
-    $row = $mysqli->execute_query(
-        "SELECT u.user_id, u.role FROM USER_TOKEN t JOIN USER u ON u.user_id = t.user_id
-        WHERE t.token_hash = ? AND t.expires_at > ?",
-        [hash('sha256', $token), date('Y-m-d H:i:s')]
-    )->fetch_assoc();
-
-    if (!$row) {
+    if (!$user) {
         sendJson(['error' => 'Inte inloggad'], 401);
-        exit;
+        exit;   // den här MÅSTE finnas kvar
     }
-    return $row;
+    return $user;
 }
 
