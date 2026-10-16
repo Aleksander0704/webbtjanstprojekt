@@ -58,7 +58,8 @@ function deluser(string $username) {
 }
 
 function listusers() {
-    global $mysqli;
+    global $mysqli, $token;
+    inloggadUser($token);
 
     $result = $mysqli->query("SELECT username, role FROM USER");
     $users = $result->fetch_all(MYSQLI_ASSOC);

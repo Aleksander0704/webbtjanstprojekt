@@ -38,7 +38,7 @@ function createToken($username, $password) {
     sendJson(['success' => true, 'token' => $token, 'expires_at' => $expires_at]);
     exit;
 }
-
+/*
 function listtoken() {
     global $mysqli;
 
@@ -48,6 +48,7 @@ function listtoken() {
     sendJson(['success' => true, 'tokens' => $tokens]);
     exit;
 }
+*/
 
 function verifyToken($token) {
     global $mysqli;

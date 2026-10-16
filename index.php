@@ -55,9 +55,11 @@ switch($option){
     case 'createtoken':
         createToken($username, $password);
         break;
+    /*
     case 'listtokens':
         listtoken();
         break;
+    */
     case 'verifytoken':
         verifyToken($token);
         break;
