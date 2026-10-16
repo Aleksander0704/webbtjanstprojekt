@@ -48,3 +48,13 @@ function deluser(string $username) {
     sendJson(['success' => true, 'deleted_user' => $username]);
     exit;
 }
+
+function listusers() {
+    global $mysqli;
+
+    $result = $mysqli->query("SELECT username, role FROM USER");
+    $users = $result->fetch_all(MYSQLI_ASSOC);
+
+    sendJson(['success' => true, 'users' => $users]);
+    exit;
+}

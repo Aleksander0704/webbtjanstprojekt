@@ -39,6 +39,9 @@ switch($option){
     case 'deluser':
         deluser($username);
         break;
+    case 'listusers':
+        listusers();
+        break;
     default:
         echo json_encode(["error" => "Ogiltig option"]);
 }
