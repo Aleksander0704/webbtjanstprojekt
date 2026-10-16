@@ -3,8 +3,8 @@
 require_once __DIR__ . '/../core.php';
 
 function adduser(string $username, string $password, string $role = 'user') {
-    global $mysqli;
-
+    global $mysqli, $token;
+    if (inloggadUser($token)['role'] !== 'admin') { sendJson(['error' => 'Bara admin'], 403); exit; }
 
     if ($username === '' || $password === '') {
         sendJson(['error' => 'username och password krävs'], 400);
@@ -29,7 +29,8 @@ function adduser(string $username, string $password, string $role = 'user') {
 }
 
 function deluser(string $username) {
-    global $mysqli;
+    global $mysqli, $token;
+    if (inloggadUser($token)['role'] !== 'admin') { sendJson(['error' => 'Bara admin'], 403); exit; }
 
     if ($username === '') {
         sendJson(['error' => 'username krävs'], 400);
