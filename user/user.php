@@ -3,8 +3,8 @@
 require_once __DIR__ . '/../core.php';
 
 function adduser(string $username, string $password, string $role = 'user') {
-    global $mysqli;
-
+    global $mysqli, $token;
+    if (inloggadUser($token)['role'] !== 'admin') { sendJson(['error' => 'Bara admin'], 403); exit; }
 
     if ($username === '' || $password === '') {
         sendJson(['error' => 'username och password krävs'], 400);
@@ -29,12 +29,20 @@ function adduser(string $username, string $password, string $role = 'user') {
 }
 
 function deluser(string $username) {
-    global $mysqli;
+    global $mysqli, $token;
+    if (inloggadUser($token)['role'] !== 'admin') { sendJson(['error' => 'Bara admin'], 403); exit; }
 
     if ($username === '') {
         sendJson(['error' => 'username krävs'], 400);
         exit;
     }
+
+    $offer = $mysqli->execute_query("SELECT user_id FROM USER WHERE username = ?", [$username])->fetch_assoc();
+    $admin = inloggadUser($token);
+    if ($offer && $offer['user_id'] === $admin['user_id']) {
+        sendJson(['error' => 'Du kan inte ta bort dig själv'], 400);
+    exit;
+}
 
     $stmt = $mysqli->prepare("DELETE FROM USER WHERE username = ?");
     $stmt->bind_param("s", $username);
@@ -50,7 +58,8 @@ function deluser(string $username) {
 }
 
 function listusers() {
-    global $mysqli;
+    global $mysqli, $token;
+    inloggadUser($token);
 
     $result = $mysqli->query("SELECT username, role FROM USER");
     $users = $result->fetch_all(MYSQLI_ASSOC);

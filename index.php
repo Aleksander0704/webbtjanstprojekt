@@ -4,7 +4,10 @@ require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/blogg/blogg.php';
 require_once __DIR__ . '/calendar/calendar.php';
 require_once __DIR__ . '/wiki/wiki.php';
+
 require_once __DIR__ . '/user/user.php';
+require_once __DIR__ . '/user/usertoken.php';
+
 require_once __DIR__ . '/theprovidor.php';
 
 
@@ -14,7 +17,11 @@ $username = $_POST['username'] ?? '';
 $password = $_POST['password'] ?? '';
 $role     = ($_POST['role'] ?? 'user') === 'admin' ? 'admin' : 'user';
 
+//token input
+$token = $_POST['token'] ?? '';
+
 switch($option){
+    //test
     case 'blogg':
         blogg();
         break;
@@ -24,6 +31,7 @@ switch($option){
     case 'wiki':
         wiki();
         break;
+    //theprovidor
     case 'login':
         login();
         break;
@@ -33,6 +41,7 @@ switch($option){
     case 'logout':
         logout();
         break;
+    //user
     case 'adduser':
         adduser($username, $password, $role);
         break;
@@ -41,6 +50,21 @@ switch($option){
         break;
     case 'listusers':
         listusers();
+        break;
+    //user token
+    case 'createtoken':
+        createToken($username, $password);
+        break;
+    /*
+    case 'listtokens':
+        listtoken();
+        break;
+    */
+    case 'verifytoken':
+        verifyToken($token);
+        break;
+    case 'userlogout':
+        userlogout($token);
         break;
     default:
         echo json_encode(["error" => "Ogiltig option"]);

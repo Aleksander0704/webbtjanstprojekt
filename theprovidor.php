@@ -34,7 +34,7 @@ function login() {
         sendJson(['error' => 'Kunde inte logga in hos The Provider', 'svar' => $response], 502);
         exit;
     }
-
+    
     // 3. Spara i databasen (skapar raden första gången, skriver över den sen)
     $mysqli->execute_query(
         "REPLACE INTO COMPANY (company_id, session_key, services, expires_at) VALUES (?, ?, ?, ?)",
